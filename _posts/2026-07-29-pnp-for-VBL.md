@@ -24,3 +24,5 @@ To insert an image, stored in `assets/images/`, write :
 ``` write : ![PnPs Comparison](../assets/images/Iter_vs_BPnP.png)```
 
 ![PnPs Comparison](../assets/images/Iter_vs_BPnP.png)
+
+test
