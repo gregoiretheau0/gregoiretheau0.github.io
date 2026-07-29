@@ -13,13 +13,13 @@ This post breaks down the mathematics behind PnP algorithms, details their integ
 
 ## The Vision-Based Landing (VBL) Architecture
 
-The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft attitude and translation vector $y_{3D} \in \mathbb{R}^3$ relative to the runway coordinate system from a single monocular image.
+The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft attitude and translation vector $y_{3D} \in \mathbb{R}^3$ relative to the runway coordinate system from a single image.
 
 ![End-to-End VBL Pipeline Architecture](/assets/images/posts/pnp-vbl/vbl_pipeline.png)
 
 The system operates in three main functional stages:
 
-1. **2D Landmark Detection**: A keypoint regression network (such as YOLOv8-Pose) processes the input image and isolates the 2D pixel coordinates $\hat{k} \in \mathbb{R}^{4 \times 2}$ corresponding to the key features of the runway (typically the four threshold corners).
+1. **2D Landmark Detection**: A keypoint regression network (such as YOLOv8-Pose) processes the input image and isolates the 2D pixel coordinates $\hat{k} \in \mathbb{R}^{4 \times 2}$ corresponding to the key features of the runway (typically the four runway corners).
 2. **Candidate Selection**: A filtering step retains the highest-confidence candidate detection above a operational threshold.
 3. **Geometric Pose Estimation**: A Perspective-n-Point ($f_{PnP}$) algorithm combines the regressed 2D keypoints with known 3D runway coordinates $K_{3D} \in \mathbb{R}^{4 \times 3}$ to derive the final 6-DoF aircraft pose.
 
