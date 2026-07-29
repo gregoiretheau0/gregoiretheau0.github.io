@@ -15,7 +15,7 @@ This post breaks down the mathematics behind PnP algorithms, details their integ
 
 The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft attitude and translation vector $y_{3D} \in \mathbb{R}^3$ relative to the runway coordinate system from a single monocular image.
 
-![End-to-End VBL Pipeline Architecture](../assets/images/posts/pnp-vbl/vbl_pipeline.png)
+![End-to-End VBL Pipeline Architecture](/assets/images/posts/pnp-vbl/vbl_pipeline.png)
 
 The system operates in three main functional stages:
 
@@ -29,7 +29,7 @@ The system operates in three main functional stages:
 
 The Perspective-n-Point problem consists of determining the relative rotation $\mathbf{R} \in \mathrm{SO}(3)$ and translation $\mathbf{t} \in \mathbb{R}^3$ between a 3D object coordinate frame and a camera coordinate frame, given $N$ corresponding 3D-to-2D point pairs.
 
-![PnP Coordinate Transformation Geometry](../assets/images/posts/pnp-vbl/pnp_geometry.png)
+![PnP Coordinate Transformation Geometry](/assets/images/posts/pnp-vbl/pnp_geometry.png)
 
 Using the pinhole camera model, a 3D point $\mathbf{X}_w = [X_w, Y_w, Z_w, 1]^\top$ expressed in the world coordinate system projects to image pixel coordinates $\mathbf{u} = [u, v, 1]^\top$ according to:
 
@@ -107,8 +107,7 @@ def evaluate_all_pnps(obj_pts, img_pts, cam_mat, dist_c, dev):
 
 The quantitative comparison highlights clear structural differences in how geometric solvers handle planar keypoint configurations and neural network noise.
 
-![Relative Translation Error Distribution Across 5 Solvers](../assets/images/posts/pnp-vbl/pnp_benchmark_all.png)
-
+![Relative Translation Error Distribution Across 5 Solvers](/assets/images/posts/pnp-vbl/pnp_benchmark_all.png)
 ### Performance Under Ground-Truth Keypoints
 
 When provided with exact keypoints, solvers exhibit distinct geometric characteristics:
@@ -130,7 +129,7 @@ When incorporating real keypoint estimation noise from YOLOv8-Pose:
 
 In research contexts involving gradient-based validation or end-to-end training, substituting non-differentiable solvers with differentiable counterparts like BPnP is common practice. We evaluated whether BPnP provides an accurate surrogate for OpenCV's standard `SOLVEPNP_ITERATIVE`.
 
-![OpenCV Iterative PnP vs Differentiable BPnP Comparison](../assets/images/posts/pnp-vbl/iter_vs_bpnp.png)
+![OpenCV Iterative PnP vs Differentiable BPnP Comparison](/assets/images/posts/pnp-vbl/iter_vs_bpnp.png)
 
 ### Comparative Findings
 
