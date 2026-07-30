@@ -11,6 +11,12 @@ This post breaks down the mathematics behind PnP algorithms, details their integ
 
 ---
 
+### Table of Contents
+* TOC
+{:toc}
+
+---
+
 ## The Vision-Based Landing (VBL) Architecture
 
 The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft attitude and translation vector $y_{3D} \in \mathbb{R}^3$ relative to the runway coordinate system from a single image.
@@ -134,10 +140,19 @@ Substituting non-differentiable solvers with backpropagatable alternatives like 
 * **Sensitivity to Outliers**: Under noisy predictions, while BPnP retains a median error close to ITER (**6.8% / 238.0 m** vs. **5.9% / 201.3 m**), it exhibits high sensitivity to severe keypoint perturbations. This causes its MAE to spike to **58.6% (592.2 m)** compared to **14.6% (368.2 m)** for ITER.
 * **Implication**: BPnP serves as a reliable differentiable proxy for gradient-based evaluation, provided effective outlier filtering or robust loss weighting is applied.
 
+### PnP Solvers Comparison Summary
+
+| Solver | Formulation Type | Coplanar (Planar) Safe? | Differentiable? | Median Error (GT) | Median Error (YOLO Noise) | Primary Use Case |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **ITER** | Non-linear (Levenberg-Marquardt) | ✅ | ❌ | 2.2% (69.6 m) | **5.9% (201.3 m)** | General baseline, strong general noise tolerance |
+| **SQPNP** | Sequential Quadratic Prog. | ✅ | ❌ | 2.3% (73.5 m) | **6.7% (219.2 m)** | Best overall variance control under noise |
+| **IPPE** | Homography Decomposition | ✅ | ❌ | 3.0% (93.7 m) | **8.3% (241.5 m)** | Fast & direct solver tailored for planar targets |
+| **BPnP** | Implicit Function Theorem | ✅ | ✅ | 2.2% (69.9 m) | **6.8% (238.0 m)** | Gradient-based auditing & end-to-end training |
+| **P3P** | Closed-form (3 points) | ❌ | ❌ | 8.8% (242.3 m) | **16.0% (518.7 m)** | Non-coplanar 3D targets only (Avoid for runways) |
 ---
 
-## Key Takeaways for Avionics Perception Design
-
-* **Prefer SQPNP, ITER, or IPPE for Planar Targets**: For 4-point planar runway configurations, SQPNP, Iterative PnP, and IPPE provide optimal numerical stability and noise tolerance.
-* **Avoid P3P for Planar Runway Keypoints**: P3P formulations suffer from geometric disambiguation issues when keypoints are strictly coplanar.
-* **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
+> ## Key Takeaways for Avionics Perception Design
+>
+> * **Prefer SQPNP, ITER, or IPPE for Planar Targets**: For 4-point planar runway configurations, SQPNP, Iterative PnP, and IPPE provide optimal numerical stability and noise tolerance.
+> * **Avoid P3P for Planar Runway Keypoints**: P3P formulations suffer from geometric disambiguation issues when keypoints are strictly coplanar.
+> * **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.

@@ -32,3 +32,20 @@ blockquote {
   padding: 10px 15px;
   border-radius: 0 6px 6px 0;
 }
+
+// Couleur des liens et accents
+a {
+  color: #0052cc; // Bleu royal / Tech
+  text-decoration: none;
+  
+  &:hover {
+    color: #003087;
+    text-decoration: underline;
+  }
+}
+
+// Style des titres
+h1, h2, h3 {
+  color: #111827;
+  font-weight: 600;
+}
