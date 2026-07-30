@@ -124,9 +124,9 @@ Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers sca
 * **IPPE** offers stable planar performance with a median error of **8.3% (241.5 m)** and an MAE of **10.6% (394.3 m)**.
 * **P3P** degrades severely under prediction noise, recording a median error of **16.0% (518.7 m)** and an extreme MAE of **85.0% (927.4 m)**.
 
-### 3. Evaluating BPnP as a Differentiable Audit Surrogate
+### 3. Evaluating BPnP as a Differentiable Evaluation Surrogate
 
-Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness auditing (such as APGD adversarial validation). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
+Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness evaluating (such as APGD adversarial validation). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
 
 * **Nominal Equivalence**: On ground-truth keypoints, BPnP is virtually identical to standard Iterative PnP (**2.2% / 69.9 m** median error vs. **2.2% / 69.6 m** for ITER).
 * **Sensitivity to Outliers**: Under noisy predictions, while BPnP retains a median error close to ITER (**6.8% / 238.0 m** vs. **5.9% / 201.3 m**), it exhibits high sensitivity to severe keypoint perturbations. This causes its MAE to spike to **58.6% (592.2 m)** compared to **14.6% (368.2 m)** for ITER.
