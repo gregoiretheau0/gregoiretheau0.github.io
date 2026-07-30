@@ -107,6 +107,8 @@ def evaluate_all_pnps(obj_pts, img_pts, cam_mat, dist_c, dev):
 
 The quantitative comparison across 1,000 flight approach scenarios highlights structural differences in how geometric solvers handle planar keypoint configurations and neural network noise.
 
+![Relative Translation Error Distribution Across 5 Solvers](/assets/images/posts/pnp-vbl/pnp_benchmark_all.png)
+
 ### 1. Performance Under Ground-Truth Keypoints (GT)
 
 When provided with exact keypoint annotations, solvers exhibit distinct numerical bounds:
