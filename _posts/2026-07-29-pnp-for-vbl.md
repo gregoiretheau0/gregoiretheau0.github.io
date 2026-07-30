@@ -142,5 +142,5 @@ In research contexts involving gradient-based validation or end-to-end training,
 
 * **Prefer IPPE or ITER for Planar Keypoints**: For 4-point planar target configurations (such as runway corners), **IPPE** and **Iterative PnP** provide optimal numerical stability and noise tolerance.
 * **Avoid P3P for Planar Targets**: P3P formulations should be avoided when keypoints are strictly coplanar due to geometric disambiguation ambiguity.
-* **Use BPnP as a Differentiable Audit Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security audits (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
+* **Use BPnP as a Differentiable Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
 
