@@ -6,7 +6,7 @@ title: Home
 <div class="profile-header" style="margin-bottom: 2rem;">
   <h1 style="margin-bottom: 0.2rem;">Grégoire Théau</h1>
   <p style="font-size: 1.15rem; color: #555; margin-top: 0;">
-    <strong>Apprentice at Airbus AI Research</strong> | M.Sc. from <strong>CentraleSupélec</strong>
+    <strong>Apprentice at Airbus AI Research</strong> | M.S. from <strong>CentraleSupélec</strong>
   </p>
   <p style="font-size: 1.05rem; line-height: 1.6;">
     Investigating <strong>Trustworthy AI</strong>, <strong>Geometric Robustness</strong>, and <strong>Certifiable Vision-Based Perception</strong> for safety-critical aerospace systems.
