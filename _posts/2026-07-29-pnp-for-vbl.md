@@ -142,13 +142,14 @@ Substituting non-differentiable solvers with backpropagatable alternatives like 
 
 ### PnP Solvers Comparison Summary
 
-| Solver | Formulation Type | Coplanar (Planar) Safe? | Differentiable? | Median Error (GT) | Median Error (YOLO Noise) | Primary Use Case |
+| Solver | Formulation Type | Coplanar Safe? | Differentiable? | Median Error (GT) | Median Error (YOLO Noise) | Primary Use Case |
 | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **ITER** | Non-linear (Levenberg-Marquardt) | ✅ | ❌ | 2.2% (69.6 m) | **5.9% (201.3 m)** | General baseline, strong general noise tolerance |
+| **ITER** | Non-linear (Levenberg-Marquardt) | ✅ | ❌ | 2.2% (69.6 m) | **5.9% (201.3 m)** | General baseline, strong noise tolerance |
 | **SQPNP** | Sequential Quadratic Prog. | ✅ | ❌ | 2.3% (73.5 m) | **6.7% (219.2 m)** | Best overall variance control under noise |
 | **IPPE** | Homography Decomposition | ✅ | ❌ | 3.0% (93.7 m) | **8.3% (241.5 m)** | Fast & direct solver tailored for planar targets |
-| **BPnP** | Implicit Function Theorem | ✅ | ✅ | 2.2% (69.9 m) | **6.8% (238.0 m)** | Gradient-based auditing & end-to-end training |
+| **BPnP** | Implicit Function Theorem | ✅ | ✅ | 2.2% (69.9 m) | **6.8% (238.0 m)** | Gradient-based evaluating & end-to-end training |
 | **P3P** | Closed-form (3 points) | ❌ | ❌ | 8.8% (242.3 m) | **16.0% (518.7 m)** | Non-coplanar 3D targets only (Avoid for runways) |
+
 ---
 
 > ## Key Takeaways for Avionics Perception Design
