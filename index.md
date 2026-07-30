@@ -25,10 +25,10 @@ My research focuses on evaluating and certifying the operational safety of multi
 
 ## Research Interests
 
-* **Spatial & Geometric Robustness**: Auditing perception pipelines against non-convex physical perturbations beyond standard $L_p$-norm noise.
-* **Vision-Based Navigation & Landing (VBL)**: Monocular 6-DoF aircraft pose estimation and runway keypoint regression.
-* **Global Optimization for AI Assurance**: Applying Global Lipschitzian Optimization (GLO) to isolate critical failure modes and efficiently prune validation search spaces.
-* **Differentiable Pose Estimation**: End-to-end differentiable PnP solvers (BPnP) and gradient-based security auditing.
+* **Spatial & Geometric Robustness**: Evaluating perception pipelines against non-convex physical perturbations beyond standard $L_p$-norm noise.
+* **Vision-Based Navigation & Landing (VBL)**: Aircraft pose estimation and runway keypoint regression.
+* **Global Optimization for AI Evaluation**: Applying Global Lipschitzian Optimization (GLO) to isolate critical failure modes and efficiently prune validation search spaces.
+* **Differentiable Pose Estimation**: End-to-end differentiable PnP solvers (BPnP) and common PnPs solvers comparing.
 
 ---
 
