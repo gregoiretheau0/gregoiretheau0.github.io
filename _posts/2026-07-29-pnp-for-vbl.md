@@ -2,8 +2,8 @@
 layout: post
 title: "Perspective-N-Points (PnP) for Vision-Based Landing (VBL)"
 date: 2026-07-29
+use_math: true
 ---
-
 
 In safety-critical aeronautical applications, vision-based navigation serves as a crucial redundant positioning system when primary signals such as GPS or Instrument Landing Systems (ILS) are degraded or unavailable. A common Vision-Based Landing (VBL) architecture relies on a hybrid pipeline: a deep neural network detects 2D keypoints of a runway, and a geometric Perspective-n-Point (PnP) solver computes the 6-DoF position and attitude of the aircraft relative to the touchdown target.
 
@@ -144,14 +144,3 @@ In research contexts involving gradient-based validation or end-to-end training,
 * **Avoid P3P for Planar Targets**: P3P formulations should be avoided when keypoints are strictly coplanar due to geometric disambiguation ambiguity.
 * **Use BPnP as a Differentiable Audit Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security audits (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
 
-
-<!-- Script MathJax pour afficher les équations LaTeX -->
-<script>
-  MathJax = {
-    tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']],
-      displayMath: [['$$', '$$'], ['\\[', '\\]']]
-    }
-  };
-</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
