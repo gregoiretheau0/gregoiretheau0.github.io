@@ -1,6 +1,8 @@
 theme: minima
-title: The blog of Gregoire Theau
+title: Grégoire Théau
+description: Apprentice at Airbus AI Research | Vision-Based Navigation
 highlighter: rouge
 kramdown:
   math_engine: mathjax
   syntax_highlighter: rouge
+

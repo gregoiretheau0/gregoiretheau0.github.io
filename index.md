@@ -13,19 +13,16 @@ title: Home
   </p>
 </div>
 
----
-
 ## About Me
 
 I am a Apprentice at **Airbus AI Research**, working at the intersection of deep learning and safety-critical avionics. I graduated with a Master of Science degree from **CentraleSupélec**.
 
-My research focuses on evaluating and certifying the operational safety of multi-stage perception chains—specifically bridging keypoint regression networks (e.g., YOLOv8-Pose) with non-linear geometric solvers (Perspective-n-Point) under physically plausible operational disturbances such as camera rotations and lighting shifts.
+My research focuses on evaluating the operational safety of multi-stage perception chains—specifically bridging keypoint regression networks (e.g., YOLOv8-Pose) with non-linear geometric solvers (Perspective-n-Point) under physically plausible operational disturbances such as camera rotations and lighting shifts.
 
----
 
 ## Research Interests
 
-* **Spatial & Geometric Robustness**: Evaluating perception pipelines against non-convex physical perturbations beyond standard $L_p$-norm noise.
+* **Spatial & Geometric Robustness**: Evaluating perception pipelines against non-convex physical perturbations beyond standard \(L_p\)-norm noise.
 * **Vision-Based Navigation & Landing (VBL)**: Aircraft pose estimation and runway keypoint regression.
 * **Global Optimization for AI Evaluation**: Applying Global Lipschitzian Optimization (GLO) to isolate critical failure modes and efficiently prune validation search spaces.
 * **Differentiable Pose Estimation**: End-to-end differentiable PnP solvers (BPnP) and common PnPs solvers comparing.
@@ -47,7 +44,6 @@ My research focuses on evaluating and certifying the operational safety of multi
   </p>
 </div>
 
----
 {% endcomment %}
 
 ## Recent Posts
