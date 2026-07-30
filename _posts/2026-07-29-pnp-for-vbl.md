@@ -20,7 +20,7 @@ The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft attit
 The system operates in three main functional stages:
 
 1. **2D Landmark Detection**: A keypoint regression network (such as YOLOv8-Pose) processes the input image and isolates the 2D pixel coordinates $\hat{k} \in \mathbb{R}^{4 \times 2}$ corresponding to the key features of the runway (typically the four runway corners).
-2. **Candidate Selection**: A filtering step retains the highest-confidence candidate detection above a operational threshold.
+2. **Candidate Selection**: A filtering step retains the highest-confidence candidate detection above an operational threshold.
 3. **Geometric Pose Estimation**: A Perspective-n-Point ($f_{PnP}$) algorithm combines the regressed 2D keypoints with known 3D runway coordinates $K_{3D} \in \mathbb{R}^{4 \times 3}$ to derive the final 6-DoF aircraft pose.
 
 ---
@@ -67,7 +67,7 @@ We evaluate five distinct PnP implementations to identify the optimal configurat
 
 The benchmark script evaluates solver resilience under two conditions:
 1. **Ground Truth (GT)**: Evaluating numerical solver accuracy using exact ground-truth 2D annotations.
-2. **YOLO Predictions (PR)**: Testing performance under real keypoint regression noise from a YOLOv8-Pose model trained on the LARDv2 dataset.
+2. **YOLO Predictions (YOLO)**: Testing performance under real keypoint regression noise from a YOLOv8-Pose model trained on the LARDv2 dataset.
 
 The evaluation metric measured is the relative 3D translation error percentage against the true slant distance $d_{true}$:
 
@@ -105,42 +105,37 @@ def evaluate_all_pnps(obj_pts, img_pts, cam_mat, dist_c, dev):
 
 ## Benchmark Results & Analysis
 
-The quantitative comparison highlights clear structural differences in how geometric solvers handle planar keypoint configurations and neural network noise.
+The quantitative comparison across 1,000 flight approach scenarios highlights structural differences in how geometric solvers handle planar keypoint configurations and neural network noise.
 
-![Relative Translation Error Distribution Across 5 Solvers](/assets/images/posts/pnp-vbl/pnp_benchmark_all.png)
-### Performance Under Ground-Truth Keypoints
+### 1. Performance Under Ground-Truth Keypoints (GT)
 
-When provided with exact keypoints, solvers exhibit distinct geometric characteristics:
+When provided with exact keypoint annotations, solvers exhibit distinct numerical bounds:
 
-* **ITER, IPPE, SQPNP, and BPnP** demonstrate high numerical precision, achieving a median relative translation error of **~2.2%** (corresponding to approximately **69.6 meters** of translation error at multi-kilometer approach distances).
-* **P3P** displays significantly higher variance and median error (**~8.8%**). This behavior stems from the geometric ambiguity of planar configurations when selecting subsets of 3 points from planar rectangle corners.
+* **ITER, BPnP, and SQPNP** demonstrate the highest precision, with median errors around **2.2%–2.3%** (**69.6 m** for ITER, **69.9 m** for BPnP, and **73.5 m** for SQPNP) and low Mean Absolute Errors (MAE $\le 3.2\%$).
+* **IPPE** achieves strong numerical accuracy with a median error of **3.0% (93.7 m)** and MAE of **3.8% (143.6 m)**.
+* **P3P** exhibits significantly higher error and variance (**8.8% / 242.3 m** median, **10.9% / 342.5 m** MAE). This behavior stems from geometric ambiguity when selecting subsets of 3 points from planar rectangular configurations.
 
-### Performance Under Deep Learning Keypoint Noise (YOLOv8-Pose)
+### 2. Performance Under Predicted Keypoints (YOLOv8-Pose)
 
-When incorporating real keypoint estimation noise from YOLOv8-Pose:
+Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers scale with real-world detection errors:
 
-* **Iterative PnP (ITER)** proves to be the most robust general solver, maintaining a median error of **5.9% (201.3 m)** and a Mean Absolute Error (MAE) of **14.6% (368.2 m)**.
-* **IPPE** and **SQPNP** offer near-identical robustness to ITER, benefiting from optimization formulations tailored to planar targets.
-* **P3P** degrades significantly under prediction noise, yielding a median error of **15.8%** with extreme outliers exceeding 60% relative error.
+* **Iterative PnP (ITER)** maintains the lowest median translation error at **5.9% (201.3 m)** with a Mean Absolute Error (MAE) of **14.6% (368.2 m)**.
+* **SQPNP** achieves the best overall variance control, yielding a median error of **6.7% (219.2 m)** and the lowest MAE under noise at **9.3% (366.8 m)**.
+* **IPPE** offers stable planar performance with a median error of **8.3% (241.5 m)** and an MAE of **10.6% (394.3 m)**.
+* **P3P** degrades severely under prediction noise, recording a median error of **16.0% (518.7 m)** and an extreme MAE of **85.0% (927.4 m)**.
 
----
+### 3. Evaluating BPnP as a Differentiable Audit Surrogate
 
-## Iterative PnP vs. Differentiable BPnP Deep-Dive
+Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness auditing (such as APGD adversarial validation). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
 
-In research contexts involving gradient-based validation or end-to-end training, substituting non-differentiable solvers with differentiable counterparts like BPnP is common practice. We evaluated whether BPnP provides an accurate surrogate for OpenCV's standard `SOLVEPNP_ITERATIVE`.
-
-![OpenCV Iterative PnP vs Differentiable BPnP Comparison](/assets/images/posts/pnp-vbl/iter_vs_bpnp.png)
-
-### Comparative Findings
-
-* **Exact Equivalence on Nominal Input**: On ground-truth keypoints, BPnP matches Iterative PnP perfectly, recording identical median errors (**2.2%** vs **2.2%**) and close MAE bounds (**2.9%** vs **3.2%**).
-* **Divergence Under Large Prediction Outliers**: Under noisy YOLO predictions, while the median performance remains close (**5.9%** for ITER vs **6.8%** for BPnP), BPnP exhibits higher sensitivity to large keypoint perturbations, increasing its MAE to **58.6%** compared to **14.6%** for OpenCV ITER.
+* **Nominal Equivalence**: On ground-truth keypoints, BPnP is virtually identical to standard Iterative PnP (**2.2% / 69.9 m** median error vs. **2.2% / 69.6 m** for ITER).
+* **Sensitivity to Outliers**: Under noisy predictions, while BPnP retains a median error close to ITER (**6.8% / 238.0 m** vs. **5.9% / 201.3 m**), it exhibits high sensitivity to severe keypoint perturbations. This causes its MAE to spike to **58.6% (592.2 m)** compared to **14.6% (368.2 m)** for ITER.
+* **Implication**: BPnP serves as a reliable differentiable proxy for gradient-based evaluation, provided effective outlier filtering or robust loss weighting is applied.
 
 ---
 
 ## Key Takeaways for Avionics Perception Design
 
-* **Prefer IPPE or ITER for Planar Keypoints**: For 4-point planar target configurations (such as runway corners), **IPPE** and **Iterative PnP** provide optimal numerical stability and noise tolerance.
-* **Avoid P3P for Planar Targets**: P3P formulations should be avoided when keypoints are strictly coplanar due to geometric disambiguation ambiguity.
-* **Use BPnP as a Differentiable Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
-
+* **Prefer SQPNP, ITER, or IPPE for Planar Targets**: For 4-point planar runway configurations, SQPNP, Iterative PnP, and IPPE provide optimal numerical stability and noise tolerance.
+* **Avoid P3P for Planar Runway Keypoints**: P3P formulations suffer from geometric disambiguation issues when keypoints are strictly coplanar.
+* **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
