@@ -331,7 +331,7 @@ The perfect alignment confirms that the extrinsic transformation matrix correctl
 
 Visual verification on a single frame is a good sanity check, but robust pipelines require statistical validation. We ran this projection algorithm across our entire synthetic training dataset of **14,668 frames** to compute the Mean Euclidean Distance (in pixels) between the simulator's exported 2D ground truth and our analytically projected 2D coordinates.
 
-![Projection Error Distribution](/assets/images/posts/3d-to-2d-projection/image_249295.png)
+![Projection Error Distribution](/assets/images/posts/3d-to-2d-projection/projection_error.png)
 
 The distribution reveals a maximum error of roughly 3 pixels, with the vast majority of projections falling within the 0.5 to 2.1 pixel range. On a $1024 \times 1024$ image, this translates to a maximum localization error of about 0.3%. 
 
