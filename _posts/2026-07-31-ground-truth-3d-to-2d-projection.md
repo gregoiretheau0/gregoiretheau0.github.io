@@ -5,7 +5,7 @@ date: 2026-07-31
 use_math: true
 ---
 
-In vision-based navigation systems, evaluating keypoint regression networks like YOLOv8-Pose requires exact 2D pixel annotations. Flight simulators such as FLSim naturally operate with 3D global positions (ECEF/WGS84) and aircraft attitude (Euler angles).
+In vision-based navigation systems, evaluating keypoint regression networks like YOLOv8-Pose [[Jocher et al., 2023](#ref-yolov8)] requires exact 2D pixel annotations. Flight simulators such as FLSim naturally operate with 3D global positions (ECEF/WGS84) and aircraft attitude (Euler angles).
 
 To automatically generate pixel-accurate ground truth annotations—or to debug keypoint regression before running a Perspective-n-Point (PnP) solver—we must perform the inverse geometric pipeline: projecting 3D runway world coordinates onto the 2D camera image plane.
 
@@ -36,7 +36,8 @@ Compute:
 
 ## Input Data Format (JSON & CSV)
 
-Before setting up the geometric equations, let's examine how the simulator structures its input telemetry and ground truth data.
+Before setting up the geometric equations, let's examine how the simulator structures its input telemetry and ground truth data, based on the LARD dataset specifications [[Ducoffe et al., 2023](#ref-lard)].
+
 
 ### 1. 3D World Coordinates (`runways_db_V2_FLSim.json`)
 The database contains 3D global ECEF coordinates $(X, Y, Z)$ for the four threshold corners ($A, B, C, D$) of each runway:
@@ -317,7 +318,7 @@ projected_pixels = project_3d_to_2d(pts_3d, cam_pos_ecef, ac_ll, ac_att, K)
 
 ## Results & Verification
 
-To validate our projection pipeline, we project 3D runway threshold keypoints extracted from `runways_db_V2_FLSim.json` using simulator metadata and overlay them onto generated synthetic images.
+To validate our projection pipeline, we project 3D runway threshold keypoints extracted from `runways_db_V2_FLSim.json` [[DEEL Project, 2023](#ref-lard-gen)] using simulator metadata and overlay them onto generated synthetic images.
 
 ![Projection Results Verification](/assets/images/posts/3d-to-2d-projection/10_result.png)
 
@@ -335,7 +336,7 @@ Visual verification on a single frame is a good sanity check, but robust pipelin
 
 The distribution reveals a maximum error of roughly 3 pixels, with the vast majority of projections falling within the 0.5 to 2.1 pixel range. On a $1024 \times 1024$ image, this translates to a maximum localization error of about 0.3%. 
 
-This sub-pixel to 3-pixel discrepancy across nearly 15,000 images is largely negligible for training YOLOv8-Pose models. It is primarily attributed to:
+This sub-pixel to 3-pixel discrepancy across nearly 15,000 images is largely negligible for training YOLOv8-Pose models [[DEEL Project, 2023](#ref-lard-models)]. It is primarily attributed to:
 1. Floating-point precision rounding in the simulator's native CSV export.
 2. The assumption of a spherical Earth model ($R = 6371010$m) in our `llh2ecef` conversion, whereas the simulator's internal engine might compute slight geoid undulations.
 
@@ -346,3 +347,11 @@ This sub-pixel to 3-pixel discrepancy across nearly 15,000 images is largely neg
 > * **Always chain transformations explicitly**: Do not skip the NED or Body frame when converting global geocentric coordinates (ECEF) to camera projection space.
 > * **Watch axis definitions**: Flight body frames ($X$ front, $Y$ right, $Z$ down) differ from computer vision camera frames ($Z$ front, $X$ right, $Y$ down). The swap matrix $\mathbf{R}_{body \to cam}$ is critical.
 > * **Analytical intrinsics are sufficient**: For synthetic data generated via engines like FLSim, camera intrinsic matrices can be derived directly from Field of View without empirical board calibration.
+
+## References & Useful Links
+
+### Datasets & Frameworks
+* <a id="ref-lard"></a>**LARD Dataset**: Ducoffe, M., Carrere, M., Féliers, L., Gauffriau, A., Mussot, V., Pagetti, C., & Sammour, T. (2023). *LARD: Landing Approach Runway Detection dataset for vision based landing*.
+* <a id="ref-yolov8"></a>**YOLOv8 Pose Estimation**: Jocher, G., Chaurasia, A., & Qiu, J. (2023). *Ultralytics YOLOv8*. [[Ultralytics Docs](https://docs.ultralytics.com/tasks/pose/)]
+* <a id="ref-lard-gen"></a>**LARD Generator & Pipeline**: DEEL Project. *Landing Approach Runway Detection (LARD) Dataset and Synthetic Image Generator*. [[GitHub Repository](https://github.com/deel-ai/LARD)]
+* <a id="ref-lard-models"></a>**LARD V2 YOLO Models**: DEEL Project. *Pretrained YOLOv8 / YOLOv11 Models on LARD V2 Dataset*. [[GitHub Repository](https://github.com/deel-ai-papers/Yolo_models_LARD_V2)]
