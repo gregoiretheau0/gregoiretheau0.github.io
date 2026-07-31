@@ -103,7 +103,7 @@ To convert global ECEF coordinates into a local planar frame centered at the air
 
 $$\mathbf{R}_{ecef \to ned} = \begin{bmatrix} -\sin\phi_{lat} \cos\lambda_{lon} & -\sin\phi_{lat} \sin\lambda_{lon} & \cos\phi_{lat} \\ -\sin\lambda_{lon} & \cos\lambda_{lon} & 0 \\ -\cos\phi_{lat} \cos\lambda_{lon} & -\cos\phi_{lat} \sin\lambda_{lon} & -\sin\phi_{lat} \end{bmatrix}$$
 
-Given a 3D point \(\mathbf{X}_{ECEF}\) and camera position \(\mathbf{C}_{ECEF}\), the vector in local NED coordinates is:
+Given a 3D point $\mathbf{X}\_{ECEF}$ and camera position $\mathbf{C}\_{ECEF}$, the vector in local NED coordinates is:
 
 $$\mathbf{X}_{NED} = \mathbf{R}_{ecef \to ned} \cdot (\mathbf{X}_{ECEF} - \mathbf{C}_{ECEF})$$
 
