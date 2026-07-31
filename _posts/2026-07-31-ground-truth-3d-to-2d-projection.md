@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Synthetic Data Pipeline: Projecting 3D Ground Truth Keypoints to 2D Image Space"
-date: 2026-08-02
+date: 2026-07-31
 use_math: true
 ---
 
