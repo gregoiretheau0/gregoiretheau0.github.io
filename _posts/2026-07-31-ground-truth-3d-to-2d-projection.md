@@ -34,6 +34,42 @@ Compute:
 
 ---
 
+## Input Data Format (JSON & CSV)
+
+Before setting up the geometric equations, let's examine how the simulator structures its input telemetry and ground truth data.
+
+### 1. 3D World Coordinates (`runways_db_V2_FLSim.json`)
+The database contains 3D global ECEF coordinates $(X, Y, Z)$ for the four threshold corners ($A, B, C, D$) of each runway:
+
+```json
+{
+  "CYEG": {
+    "20": {
+      "A": { "position": { "x": -1885420.5, "y": -4274921.2, "z": 5098231.1 } },
+      "B": { "position": { "x": -1885410.1, "y": -4274940.8, "z": 5098210.4 } },
+      "C": { "position": { "x": -1883900.2, "y": -4275800.0, "z": 5097600.0 } },
+      "D": { "position": { "x": -1883910.0, "y": -4275780.5, "z": 5097620.1 } }
+    }
+  }
+}
+```
+
+### 2. Simulator Telemetry & 2D Keypoints (`metadata_flsim_train.csv`)
+The dataset CSV provides camera pose parameters (latitude, longitude, altitude, Euler angles) along with reference 2D pixel annotations ($u, v$) for keypoint validation:
+
+```csv
+image;width;height;airport;runway;lat;lon;alt;yaw;pitch;roll;x_TR;y_TR;x_TL;y_TL;x_BL;y_BL;x_BR;y_BR
+CYEG-20_000.jpg;1024;1024;CYEG;20;53.376196;-113.519482;1010.36;-149.64;87.63;-1.54;576;506;570;506;562;522;571;523
+```
+
+The 3D keypoints ($A, B, C, D$) map to 2D image annotations as follows:
+* **Top-Right (TR)** $\leftrightarrow$ Corner $A$
+* **Top-Left (TL)** $\leftrightarrow$ Corner $B$
+* **Bottom-Left (BL)** $\leftrightarrow$ Corner $C$
+* **Bottom-Right (BR)** $\leftrightarrow$ Corner $D$
+
+---
+
 ## Why Is Simple Projection Not Enough? The Coordinate Frame Challenge
 
 A common pitfall when working with simulator telemetry is passing ECEF coordinates directly into standard pinhole camera equations. Pinhole projection assumes coordinates are expressed in an **optical frame** where $+Z$ points forward along the camera line-of-sight, $+X$ points right, and $+Y$ points downwards.
@@ -49,11 +85,17 @@ However, flight simulator telemetry operates across radically different referenc
 
 Mapping a 3D point from ECEF to the camera image requires chaining 3 rigid transformations:
 
-![Three-Step Transformation Pipeline](/assets/images/posts/3d-to-2d-projection/6_issue_images.jpg)
+![Three-Step Transformation Pipeline](/assets/images/posts/3d-to-2d-projection/6_issue_images.png)
 
 ---
 
 ## Step-by-Step Coordinate Frame Transformations
+
+### A Note on Simulator Earth Models (Geodetic to ECEF)
+
+Before executing coordinate frame rotations, telemetry coordinates (Latitude, Longitude, Altitude) must be converted into the global Cartesian ECEF system. 
+
+Depending on the physics engine of the flight simulator, the virtual earth might be modeled as a perfect sphere rather than a standard WGS84 ellipsoid. For instance, in our specific pipeline, we map Geodetic to ECEF assuming a constant Earth radius ($R = 6371010$ meters). If high-precision real-world data is required, libraries like `pyproj` should be used to account for ellipsoidal eccentricity.
 
 ### Step 1: ECEF to Local NED Frame (Earth Curvature Alignment)
 
@@ -70,6 +112,16 @@ $$\mathbf{X}_{NED} = \mathbf{R}_{ecef \to ned} \cdot (\mathbf{X}_{ECEF} - \mathb
 ### Step 2: Local NED to Aircraft Body Frame (Attitude Rotation)
 
 The aircraft attitude provided by flight simulators consists of standard aeronautical Euler angles: **Yaw ($\psi$)**, **Pitch ($\theta$)**, and **Roll ($\phi$)**. 
+
+> **Pitch Angle Convention Warning**
+> 
+> Flight simulators like FLSim often express the raw pitch angle relative to the **zenith** ($0^\circ$ pointing straight up, $90^\circ$ at horizontal) rather than standard aeronautical pitch ($0^\circ$ at horizontal). 
+> 
+> Before constructing the rotation matrix, you must convert zenith pitch to standard pitch:
+>
+> $$\theta_{true} = \theta_{raw} - 90^\circ$$
+>
+> For instance, a simulator value of `pitch = 87.64°` actually represents a nose-down pitch of $-2.36^\circ$.
 
 We construct the rotation matrix mapping local NED to the aircraft body frame by composing individual axis rotations:
 
@@ -165,12 +217,12 @@ def ned_to_body_matrix(yaw_deg, pitch_deg, roll_deg):
     
     return R_roll @ R_pitch @ R_yaw
 
-def project_3d_to_2d(pts_3d_ecef, ac_ecef, ac_ll, ac_att, K):
+def project_3d_to_2d(pts_3d_ecef, cam_pos_ecef, ac_ll, ac_att, K):
     """
-    Projects 3D ECEF points onto 2D image coordinates.
+    Projects 3D ECEF points onto 2D image coordinates using homogeneous matrices.
     
-    :param pts_3d_ecef: (N, 3) array of 3D keypoints in ECEF
-    :param ac_ecef: (3,) aircraft ECEF position [X, Y, Z]
+    :param pts_3d_ecef: List of 3D keypoints in ECEF [X, Y, Z]
+    :param cam_pos_ecef: (3,) camera ECEF position [X, Y, Z]
     :param ac_ll: (2,) aircraft [lat, lon] in degrees
     :param ac_att: (3,) aircraft attitude [yaw, pitch, roll] in degrees
     :param K: (3, 3) camera intrinsics matrix
@@ -178,27 +230,87 @@ def project_3d_to_2d(pts_3d_ecef, ac_ecef, ac_ll, ac_att, K):
     """
     R_ecef2ned = ecef_to_ned_matrix(ac_ll[0], ac_ll[1])
     R_ned2body = ned_to_body_matrix(ac_att[0], ac_att[1], ac_att[2])
-    R_body2cam = np.array([[0, 1, 0], 
-                           [0, 0, 1], 
-                           [1, 0, 0]])
     
-    # Combined Extrinsic Rotation Matrix
-    R_total = R_body2cam @ R_ned2body @ R_ecef2ned
+    # Axis swap: Aircraft Body to Camera Optical Frame
+    R_body2cam = np.array([
+        [0, 1, 0], 
+        [0, 0, 1], 
+        [1, 0, 0]
+    ])
     
-    # Transform points to Camera Optical Frame
-    pts_trans = pts_3d_ecef - ac_ecef
-    pts_cam = (R_total @ pts_trans.T).T
+    # Combined Extrinsic Rotation Matrix (R)
+    R_ext = R_body2cam @ R_ned2body @ R_ecef2ned
     
-    # Perspective Division and Intrinsic Projection
-    pts_2d_hom = (K @ pts_cam.T).T
-    pts_2d = pts_2d_hom[:, :2] / pts_2d_hom[:, 2:]
+    # Translation vector t = -R * C
+    t_ext = -R_ext @ cam_pos_ecef
     
-    return pts_2d
+    # Construct [3x4] Extrinsic Matrix E = [R | t]
+    E = np.zeros((3, 4))
+    E[:3, :3] = R_ext
+    E[:3, 3] = t_ext
+    
+    pts_2d = []
+    for pt in pts_3d_ecef:
+        # 1. Convert to Homogeneous 3D coordinates [X, Y, Z, 1]^T
+        Xw = np.array([pt[0], pt[1], pt[2], 1.0]).reshape(4, 1)
+        
+        # 2. Transform to Camera Optical Frame
+        Xw_c = E @ Xw
+        
+        # 3. Guard against points behind or too close to the camera (Z <= 0)
+        # In a full pipeline, segment clipping is required here.
+        if Xw_c[2, 0] < 1.0:
+            continue
+            
+        # 4. Intrinsic Projection and Perspective Division
+        u = K @ Xw_c
+        px = int(u[0, 0] / u[2, 0])
+        py = int(u[1, 0] / u[2, 0])
+        pts_2d.append([px, py])
+        
+    return np.array(pts_2d)
 ```
+
+> **Handling Points Behind the Camera**
+> 
+> In a simulator environment, the aircraft might fly extremely close to or directly over the runway threshold. If a 3D keypoint falls behind the camera's focal plane (where $Z \le 0$ in the optical frame), standard perspective division ($X/Z$, $Y/Z$) will mathematically flip the point or cause a division by zero. 
+> 
+> To prevent this, the implementation must explicitly filter or adjust points where $Z < 1.0$ before applying the intrinsic projection matrix.
+
+### Putting It All Together
+
+Using the data from our JSON and CSV examples, the full pipeline execution looks like this:
+
+```python
+# 1. Extract metadata from CSV
+lat, lon, alt = 53.376196, -113.519482, 1010.36
+raw_yaw, raw_pitch, raw_roll = -149.64, 87.63, -1.54
+
+# 2. Convert Geodetic to ECEF (Spherical model approximation)
+# For strict WGS84, use pyproj.Transformer
+R_earth = 6371010
+cam_pos_ecef = llh2ecef_spherical(lat, lon, alt, R_earth)
+
+# 3. Correct Zenith Pitch to standard aeronautical Pitch
+ac_att = [raw_yaw, raw_pitch - 90.0, raw_roll]
+ac_ll = [lat, lon]
+
+# 4. Generate Intrinsics and Project
+K = compute_intrinsics(fov_v_deg=60, width=1024, height=1024)
+
+# 3D points from JSON (Corners A, B, C, D)
+pts_3d = [
+    [-1885420.5, -4274921.2, 5098231.1],
+    [-1885410.1, -4274940.8, 5098210.4],
+    [-1883900.2, -4275800.0, 5097600.0],
+    [-1883910.0, -4275780.5, 5097620.1]
+]
+
+projected_pixels = project_3d_to_2d(pts_3d, cam_pos_ecef, ac_ll, ac_att, K)
 
 ## Results & Verification
 
-To validate our projection pipeline, we project 3D runway threshold keypoints extracted from `runways_db_V2_GEarth.json` using simulator metadata and overlay them onto generated synthetic images.
+To validate our projection pipeline, we project 3D runway threshold keypoints extracted from `runways_db_V2_FLSim.json` using simulator metadata and overlay them onto generated synthetic images.
 
 ![Projection Results Verification](/assets/images/posts/3d-to-2d-projection/10_result.png)
 
