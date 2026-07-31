@@ -123,6 +123,12 @@ The aircraft attitude provided by flight simulators consists of standard aeronau
 >
 > For instance, a simulator value of `pitch = 87.64°` actually represents a nose-down pitch of $-2.36^\circ$.
 
+> **True vs. Magnetic Heading Warning**
+> 
+> The analytical NED frame constructed in Step 1 is strictly aligned with **True North** (geographic north). Consequently, the Yaw ($\psi$) angle provided by your simulator's telemetry must be **True Heading**. 
+> 
+> If your dataset exports *Magnetic Heading* (which is what instruments usually display to the pilot), your projected 2D points will be offset by the local magnetic declination. Always ensure your raw metadata relies on true kinematics!
+
 We construct the rotation matrix mapping local NED to the aircraft body frame by composing individual axis rotations:
 
 $$\mathbf{R}_{yaw} = \begin{bmatrix} \cos\psi & \sin\psi & 0 \\ -\sin\psi & \cos\psi & 0 \\ 0 & 0 & 1 \end{bmatrix}, \quad \mathbf{R}_{pitch} = \begin{bmatrix} \cos\theta & 0 & -\sin\theta \\ 0 & 1 & 0 \\ \sin\theta & 0 & \cos\theta \end{bmatrix}, \quad \mathbf{R}_{roll} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos\phi & \sin\phi \\ 0 & -\sin\phi & \cos\phi \end{bmatrix}$$
@@ -320,6 +326,18 @@ As demonstrated above:
 * **Red lines/dots**: Analytically projected 2D keypoints computed via our reference frame transformation chain.
 
 The perfect alignment confirms that the extrinsic transformation matrix correctly bridges ECEF, NED, Aircraft Body, and Camera Optical frames without geometric distortion or alignment offsets.
+
+### Dataset-Wide Quantitative Validation
+
+Visual verification on a single frame is a good sanity check, but robust pipelines require statistical validation. We ran this projection algorithm across our entire synthetic training dataset of **14,668 frames** to compute the Mean Euclidean Distance (in pixels) between the simulator's exported 2D ground truth and our analytically projected 2D coordinates.
+
+![Projection Error Distribution](/assets/images/posts/3d-to-2d-projection/image_249295.png)
+
+The distribution reveals a maximum error of roughly 3 pixels, with the vast majority of projections falling within the 0.5 to 2.1 pixel range. On a $1024 \times 1024$ image, this translates to a maximum localization error of about 0.3%. 
+
+This sub-pixel to 3-pixel discrepancy across nearly 15,000 images is largely negligible for training YOLOv8-Pose models. It is primarily attributed to:
+1. Floating-point precision rounding in the simulator's native CSV export.
+2. The assumption of a spherical Earth model ($R = 6371010$m) in our `llh2ecef` conversion, whereas the simulator's internal engine might compute slight geoid undulations.
 
 ---
 
