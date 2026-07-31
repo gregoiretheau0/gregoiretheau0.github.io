@@ -7,7 +7,7 @@ use_math: true
 
 In safety-critical aeronautical applications, vision-based navigation serves as a crucial redundant positioning system when primary signals such as GPS or Instrument Landing Systems (ILS) are degraded or unavailable. A common Vision-Based Landing (VBL) architecture relies on a hybrid pipeline: a deep neural network detects 2D keypoints of a runway, and a geometric Perspective-n-Point (PnP) solver computes the 6-DoF position and attitude of the aircraft relative to the touchdown target.
 
-This post breaks down the mathematics behind PnP algorithms, details their integration into an end-to-end VBL pipeline, and presents a quantitative benchmark evaluating five major PnP formulations across 1,000 synthetic flight approach scenarios from the LARDv2 dataset.
+This post breaks down the mathematics behind PnP algorithms, details their integration into an end-to-end VBL pipeline, and presents a quantitative benchmark evaluating five major PnP formulations across 1,000 synthetic flight approach scenarios from the LARDv2 dataset [[Ducoffe et al., 2023](#ref-lard)].
 
 ---
 
@@ -35,7 +35,7 @@ The system operates in three main functional stages:
 
 The Perspective-n-Point problem consists of determining the relative rotation $\mathbf{R} \in \mathrm{SO}(3)$ and translation $\mathbf{t} \in \mathbb{R}^3$ between a 3D object coordinate frame and a camera coordinate frame, given $N$ corresponding 3D-to-2D point pairs.
 
-![PnP Coordinate Transformation Geometry](/assets/images/posts/pnp-vbl/pnp_geometry.png)
+![PnP Coordinate Transformation Geometry](/assets/images/posts/pnp-vbl/2dto3d.png)
 
 Using the pinhole camera model, a 3D point $\mathbf{X}_w = [X_w, Y_w, Z_w, 1]^\top$ expressed in the world coordinate system projects to image pixel coordinates $\mathbf{u} = [u, v, 1]^\top$ according to:
 
@@ -61,11 +61,11 @@ where $\pi([X, Y, Z]^\top) = [X/Z, Y/Z]^\top$ denotes the standard perspective p
 
 We evaluate five distinct PnP implementations to identify the optimal configuration for real-time runway pose estimation:
 
-* **Iterative PnP (ITER)**: A non-linear optimization approach based on the Levenberg-Marquardt algorithm. It minimizes reprojection error iteratively starting from an initial pose guess.
-* **P3P (Perspective-3-Point)**: A closed-form solver (Gao / Kneip formulation) utilizing three point correspondences to derive up to four potential solutions, disambiguated using a fourth point.
-* **IPPE (Infinitesimal Plane-Based Pose Estimation)**: A non-iterative solver designed specifically for planar targets (such as runway thresholds). It solves the pose directly from homography decomposition without iterative local minima risks.
-* **SQPNP (Sequential Quadratic Programming PnP)**: A solver that reformulates PnP non-linear least squares as a sequential quadratic program, handling coplanar and non-coplanar points consistently.
-* **BPnP (Backpropagatable PnP)**: A differentiable PnP formulation using the Implicit Function Theorem. While primarily designed for end-to-end trainable networks and backpropagation attacks, it acts as a baseline surrogate for non-differentiable solvers.
+* **Iterative PnP (ITER)**: A non-linear optimization approach based on the Levenberg-Marquardt algorithm [[Levenberg, 1944](#ref-levenberg)]. It minimizes reprojection error iteratively starting from an initial pose guess.
+* **P3P (Perspective-3-Point)**: A closed-form solver (Gao / Kneip formulation) utilizing three point correspondences to derive up to four potential solutions [[Gao et al., 2003](#ref-p3p)], disambiguated using a fourth point.
+* **IPPE (Infinitesimal Plane-Based Pose Estimation)**: A non-iterative solver designed specifically for planar targets [[Collins & Bartoli, 2014](#ref-ippe)] (such as runway thresholds). It solves the pose directly from homography decomposition without iterative local minima risks.
+* **SQPNP (Sequential Quadratic Programming PnP)**: A solver that reformulates PnP non-linear least squares as a sequential quadratic program [[Terzakis & Lourakis, 2020](#ref-sqpnp)], handling coplanar and non-coplanar points consistently.
+* **BPnP (Backpropagatable PnP)**: A differentiable PnP formulation using the Implicit Function Theorem [[Chen et al., 2020](#ref-bpnp)]. While primarily designed for end-to-end trainable networks and backpropagation attacks, it acts as a baseline surrogate for non-differentiable solvers.
 
 ---
 
@@ -134,7 +134,7 @@ Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers sca
 
 ### 3. Evaluating BPnP as a Differentiable Evaluation Surrogate
 
-Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness evaluating (such as APGD adversarial validation). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
+Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness evaluating (such as APGD adversarial validation [[Croce & Hein, 2020](#ref-apgd)]). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
 
 * **Nominal Equivalence**: On ground-truth keypoints, BPnP is virtually identical to standard Iterative PnP (**2.2% / 69.9 m** median error vs. **2.2% / 69.6 m** for ITER).
 * **Sensitivity to Outliers**: Under noisy predictions, while BPnP retains a median error close to ITER (**6.8% / 238.0 m** vs. **5.9% / 201.3 m**), it exhibits high sensitivity to severe keypoint perturbations. This causes its MAE to spike to **58.6% (592.2 m)** compared to **14.6% (368.2 m)** for ITER.
@@ -157,3 +157,18 @@ Substituting non-differentiable solvers with backpropagatable alternatives like 
 > * **Prefer SQPNP, ITER, or IPPE for Planar Targets**: For 4-point planar runway configurations, SQPNP, Iterative PnP, and IPPE provide optimal numerical stability and noise tolerance.
 > * **Avoid P3P for Planar Runway Keypoints**: P3P formulations suffer from geometric disambiguation issues when keypoints are strictly coplanar.
 > * **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
+
+---
+
+## References
+
+### PnP Solvers & Formulations
+* <a id="ref-ippe"></a>**IPPE**: Collins, T., & Bartoli, A. (2014). *Infinitesimal Plane-Based Pose Estimation*. International Journal of Computer Vision (IJCV), 109(3), 252-286.
+* <a id="ref-sqpnp"></a>**SQPNP**: Terzakis, G., & Lourakis, M. (2020). *A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem*. European Conference on Computer Vision (ECCV).
+* <a id="ref-bpnp"></a>**BPnP**: Chen, B., Parra, A., Cao, J., Li, N., & Chin, T. J. (2020). *End-to-End Learnable Geometric Vision by Backpropagating PnP Optimization*. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).
+* <a id="ref-p3p"></a>**P3P**: Gao, X. S., Hou, X. R., Tang, J., & Cheng, H. F. (2003). *Complete solution classification for the perspective-three-point problem*. IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI), 25(8), 930-943.
+* <a id="ref-levenberg"></a>**Iterative PnP**: Levenberg, K. (1944). *A method for the solution of certain non-linear problems in least squares*. Quarterly of Applied Mathematics, 2(2), 164-168.
+
+### Datasets & Evaluation Frameworks
+* <a id="ref-lard"></a>**LARD Dataset**: Ducoffe, M., Carrere, M., Féliers, L., Gauffriau, A., Mussot, V., Pagetti, C., & Sammour, T. (2023). *LARD: Landing Approach Runway Detection dataset for vision based landing*.
+* <a id="ref-apgd"></a>**APGD / Robustness Evaluation**: Croce, F., & Hein, M. (2020). *Reliable evaluation of adversarial robustness with an ensemble of diverse parameter-free attacks*. International Conference on Machine Learning (ICML).
