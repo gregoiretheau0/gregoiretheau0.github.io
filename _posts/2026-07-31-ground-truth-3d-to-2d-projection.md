@@ -33,7 +33,8 @@ Given:
   ![Camera Field of View](/assets/images/posts/3d-to-2d-projection/fov.png)
 
 Compute:
-* The projected pixel coordinates $(u, v) \in \mathbb{R}^{N \times 2}$ on the image sensor.
+* The projected pixel coordinates $(u, v) \in \mathbb{R}^{N \times 2}$ on the image.
+![2D Keypoints](/assets/images/posts/3d-to-2d-projection/2dkpts.png)
 
 ---
 
