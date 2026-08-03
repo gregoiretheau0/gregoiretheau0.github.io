@@ -25,10 +25,9 @@ While PnP estimates the 6-DoF aircraft pose from known 2D keypoints, **3D-to-2D 
 
 Given:
 * 3D keypoint coordinates in Earth-Centered, Earth-Fixed (ECEF) space $K_{3D} \in \mathbb{R}^{N \times 3}$.
-* Aircraft position $(X_{ac}, Y_{ac}, Z_{ac})_{ECEF}$ or $(\text{lat}, \text{lon}, \text{alt})$.
+* Aircraft position $(X_{ac}, Y_{ac}, Z_{ac})_{ECEF}$ or $(\text{lat}, \text{lon}, \text{alt})$ (which are used as inputs to map the position into the global **ECEF** frame).
   ![ECEF Coordinate System](/assets/images/posts/3d-to-2d-projection/ecef.png)
-* Aircraft attitude angles $(\psi, \theta, \phi)$ (Yaw, Pitch, Roll).
-* Aircraft attitude angles $(\psi, \theta, \phi)$ (Yaw, Pitch, Roll).
+* Aircraft attitude angles $(\psi, \theta, \phi)$ (Yaw, Pitch, Roll), which define the spatial orientation in the **local aircraft body frame**.
   ![Yaw, Pitch, Roll](/assets/images/posts/3d-to-2d-projection/yawpitchroll.webp)
 * Camera intrinsic specifications (Field of View and resolution).
   ![Camera Field of View](/assets/images/posts/3d-to-2d-projection/fov.png)
@@ -70,10 +69,13 @@ The 3D keypoints ($A, B, C, D$) map to the runway corners as follows:
 ### 2. Simulator Telemetry & 2D Keypoints (`metadata_flsim_train.csv`)
 The dataset CSV provides camera pose parameters (latitude, longitude, altitude, Euler angles) along with reference 2D pixel annotations ($u, v$) for keypoint validation:
 
-```csv
-image;width;height;airport;runway;lat;lon;alt;yaw;pitch;roll;x_TR;y_TR;x_TL;y_TL;x_BL;y_BL;x_BR;y_BR
-CYEG-20_000.jpg;1024;1024;CYEG;20;53.376196;-113.519482;1010.36;-149.64;87.63;-1.54;576;506;570;506;562;522;571;523
-```
+<pre><code>image;width;height;airport;runway;<span style="color: #1e90ff;">lat;lon;alt</span>;<span style="color: #ff8c00;">yaw;pitch;roll</span>;<span style="color: #32cd32;">x_TR;y_TR;x_TL;y_TL;x_BL;y_BL;x_BR;y_BR</span>
+CYEG-20_000.jpg;1024;1024;CYEG;20;<span style="color: #1e90ff;">53.376196;-113.519482;1010.36</span>;<span style="color: #ff8c00;">-149.64;87.63;-1.54</span>;<span style="color: #32cd32;">576;506;570;506;562;522;571;523</span></code></pre>
+
+In this raw telemetry data, we can categorize the variables by their respective reference frames:
+* **<span style="color: #1e90ff;">Position (`lat`, `lon`, `alt`)</span>**: These are used as inputs to compute the global position in the **ECEF** reference frame.
+* **<span style="color: #ff8c00;">Attitude (`yaw`, `pitch`, `roll`)</span>**: These Euler angles represent the orientation in the **local aircraft body frame**.
+* **<span style="color: #32cd32;">2D Keypoints (`x_*`, `y_*`)</span>**: These are the target **2D image plane coordinates** that our mathematical pipeline aims to compute and verify.
 
 ---
 
@@ -169,6 +171,9 @@ $$\mathbf{R}_{ext} = \mathbf{R}_{body \to cam} \cdot \mathbf{R}_{ned \to body} \
 In simulation environments, physical camera calibration using checkerboard patterns is unnecessary. We derive the intrinsic matrix $\mathbf{K}$ analytically using the simulator's vertical Field of View ($\theta_v$) and image resolution $(W, H)$.
 
 ![Analytical Camera Intrinsics Geometry](/assets/images/posts/3d-to-2d-projection/intrinsics_matrix_justification.png)
+
+> **Note on Pipeline Performance**
+> Unlike the extrinsic matrices (rotation and translation) which must be recomputed for every single frame as the aircraft moves, the intrinsic matrix $\mathbf{K}$ depends solely on the physical/virtual lens properties. Therefore, it only needs to be **calculated once** at the initialization of your pipeline and remains fixed throughout the execution.
 
 First, compute the horizontal Field of View ($\theta_h$):
 
