@@ -19,7 +19,7 @@ This post breaks down the mathematics behind PnP algorithms, details their integ
 
 ## The Vision-Based Landing (VBL) Architecture
 
-The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft attitude and translation vector $y_{3D} \in \mathbb{R}^3$ relative to the runway coordinate system from a single image.
+The objective of an end-to-end VBL pipeline is to estimate the 3D aircraft pose (attitude and translation) relative to the runway coordinate system from a single image.
 
 ![End-to-End VBL Pipeline Architecture](/assets/images/posts/pnp-vbl/vbl_pipeline.png)
 
@@ -117,7 +117,7 @@ The quantitative comparison across 1,000 flight approach scenarios highlights st
 
 ### 1. Performance Under Ground-Truth Keypoints (GT)
 
-When provided with exact keypoint annotations, solvers exhibit distinct numerical bounds:
+When provided with exact keypoint annotations, solvers exhibit distinct performance baselines::
 
 * **ITER, BPnP, and SQPNP** demonstrate the highest precision, with median errors around **2.2%–2.3%** (**69.6 m** for ITER, **69.9 m** for BPnP, and **73.5 m** for SQPNP) and low Mean Absolute Errors (MAE $\le 3.2\%$).
 * **IPPE** achieves strong numerical accuracy with a median error of **3.0% (93.7 m)** and MAE of **3.8% (143.6 m)**.
@@ -125,7 +125,7 @@ When provided with exact keypoint annotations, solvers exhibit distinct numerica
 
 ### 2. Performance Under Predicted Keypoints (YOLOv8-Pose)
 
-Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers scale with real-world detection errors:
+Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers how solvers degrade under real-world detection errors:
 
 * **Iterative PnP (ITER)** maintains the lowest median translation error at **5.9% (201.3 m)** with a Mean Absolute Error (MAE) of **14.6% (368.2 m)**.
 * **SQPNP** achieves the best overall variance control, yielding a median error of **6.7% (219.2 m)** and the lowest MAE under noise at **9.3% (366.8 m)**.
@@ -134,9 +134,9 @@ Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers sca
 
 ### 3. Evaluating BPnP as a Differentiable Evaluation Surrogate
 
-Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness evaluating (such as APGD adversarial validation [[Croce & Hein, 2020](#ref-apgd)]). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
+Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness evaluation (such as APGD adversarial validation [[Croce & Hein, 2020](#ref-apgd)]). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
 
-* **Nominal Equivalence**: On ground-truth keypoints, BPnP is virtually identical to standard Iterative PnP (**2.2% / 69.9 m** median error vs. **2.2% / 69.6 m** for ITER).
+* **Nominal Equivalence**: On ground-truth keypoints, BPnP is performs on par with to standard Iterative PnP (**2.2% / 69.9 m** median error vs. **2.2% / 69.6 m** for ITER).
 * **Sensitivity to Outliers**: Under noisy predictions, while BPnP retains a median error close to ITER (**6.8% / 238.0 m** vs. **5.9% / 201.3 m**), it exhibits high sensitivity to severe keypoint perturbations. This causes its MAE to spike to **58.6% (592.2 m)** compared to **14.6% (368.2 m)** for ITER.
 * **Implication**: BPnP serves as a reliable differentiable proxy for gradient-based evaluation, provided effective outlier filtering or robust loss weighting is applied.
 
@@ -156,7 +156,7 @@ Substituting non-differentiable solvers with backpropagatable alternatives like 
 >
 > * **Prefer SQPNP, ITER, or IPPE for Planar Targets**: For 4-point planar runway configurations, SQPNP, Iterative PnP, and IPPE provide optimal numerical stability and noise tolerance.
 > * **Avoid P3P for Planar Runway Keypoints**: P3P formulations suffer from geometric disambiguation issues when keypoints are strictly coplanar.
-> * **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided high keypoint outlier filtering is maintained.
+> * **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided keypoint outlier filtering is maintained.
 
 ---
 
