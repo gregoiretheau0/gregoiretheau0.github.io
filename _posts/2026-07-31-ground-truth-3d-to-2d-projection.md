@@ -26,8 +26,12 @@ While PnP estimates the 6-DoF aircraft pose from known 2D keypoints, **3D-to-2D 
 Given:
 * 3D keypoint coordinates in Earth-Centered, Earth-Fixed (ECEF) space $K_{3D} \in \mathbb{R}^{N \times 3}$.
 * Aircraft position $(X_{ac}, Y_{ac}, Z_{ac})_{ECEF}$ or $(\text{lat}, \text{lon}, \text{alt})$.
+  ![ECEF Coordinate System](/assets/images/posts/3d-to-2d-projection/ecef.png)
 * Aircraft attitude angles $(\psi, \theta, \phi)$ (Yaw, Pitch, Roll).
+* Aircraft attitude angles $(\psi, \theta, \phi)$ (Yaw, Pitch, Roll).
+  ![Yaw, Pitch, Roll](/assets/images/posts/3d-to-2d-projection/yawpitchroll.webp)
 * Camera intrinsic specifications (Field of View and resolution).
+  ![Camera Field of View](/assets/images/posts/3d-to-2d-projection/fov.png)
 
 Compute:
 * The projected pixel coordinates $(u, v) \in \mathbb{R}^{N \times 2}$ on the image sensor.
@@ -55,6 +59,14 @@ The database contains 3D global ECEF coordinates $(X, Y, Z)$ for the four thresh
 }
 ```
 
+![3D Keypoints Definition](/assets/images/posts/3d-to-2d-projection/3Dworldcoordinates.png)
+
+The 3D keypoints ($A, B, C, D$) map to the runway corners as follows:
+* **Top-Right (TR)** $\leftrightarrow$ Corner $A$
+* **Top-Left (TL)** $\leftrightarrow$ Corner $B$
+* **Bottom-Left (BL)** $\leftrightarrow$ Corner $C$
+* **Bottom-Right (BR)** $\leftrightarrow$ Corner $D$
+
 ### 2. Simulator Telemetry & 2D Keypoints (`metadata_flsim_train.csv`)
 The dataset CSV provides camera pose parameters (latitude, longitude, altitude, Euler angles) along with reference 2D pixel annotations ($u, v$) for keypoint validation:
 
@@ -62,12 +74,6 @@ The dataset CSV provides camera pose parameters (latitude, longitude, altitude, 
 image;width;height;airport;runway;lat;lon;alt;yaw;pitch;roll;x_TR;y_TR;x_TL;y_TL;x_BL;y_BL;x_BR;y_BR
 CYEG-20_000.jpg;1024;1024;CYEG;20;53.376196;-113.519482;1010.36;-149.64;87.63;-1.54;576;506;570;506;562;522;571;523
 ```
-
-The 3D keypoints ($A, B, C, D$) map to 2D image annotations as follows:
-* **Top-Right (TR)** $\leftrightarrow$ Corner $A$
-* **Top-Left (TL)** $\leftrightarrow$ Corner $B$
-* **Bottom-Left (BL)** $\leftrightarrow$ Corner $C$
-* **Bottom-Right (BR)** $\leftrightarrow$ Corner $D$
 
 ---
 
