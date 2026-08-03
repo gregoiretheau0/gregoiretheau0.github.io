@@ -9,6 +9,8 @@ In safety-critical aeronautical applications, vision-based navigation serves as 
 
 This post breaks down the mathematics behind PnP algorithms, details their integration into an end-to-end VBL pipeline, and presents a quantitative benchmark evaluating five major PnP formulations across 1,000 synthetic flight approach scenarios from the LARDv2 dataset [[Ducoffe et al., 2023](#ref-lard)].
 
+> **Code availability:** The complete evaluation framework, including the benchmarking scripts and environment setup, is open-source and available on GitHub: [**gregoiretheau0/pnps_comparison**](https://github.com/gregoiretheau0/pnps_comparison).
+
 ---
 
 ### Table of Contents
@@ -79,7 +81,7 @@ The evaluation metric measured is the relative 3D translation error percentage a
 
 $$\text{Error}_{\%} = \frac{\vert{} d_{true} - \Vert{} \hat{\mathbf{t}} \Vert{}_2 \vert{}}{d_{true}} \times 100$$
 
-Here is the Python implementation used to benchmark the algorithms across 1,000 images:
+Here is a core snippet of the Python implementation used to benchmark the algorithms. The complete end-to-end pipeline, including AWS S3 dataset loading, YOLO inference, and result visualization, can be found in the [**pnps_comparison repository**](https://github.com/gregoiretheau0/pnps_comparison):
 
 ```python
 import cv2
