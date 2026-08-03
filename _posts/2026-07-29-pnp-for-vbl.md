@@ -77,7 +77,16 @@ The benchmark script evaluates solver resilience under two conditions:
 1. **Ground Truth (GT)**: Evaluating numerical solver accuracy using exact ground-truth 2D annotations.
 2. **YOLO Predictions (YOLO)**: Testing performance under real keypoint regression noise from a YOLOv8-Pose model trained on the LARDv2 dataset.
 
-The evaluation metric measured is the relative 3D translation error percentage against the true slant distance $d_{true}$:
+### Evaluation Metric
+
+To quantify the accuracy of the estimated pose, we measure the relative 3D translation error percentage against the true **slant distance** ($d_{true}$). 
+
+![Landing Geometry and Slant Distance](/assets/images/posts/pnp-vbl/landing_definition.png)
+
+> **What is the Slant Distance?**  
+> In the context of vision-based landing, the slant distance is the direct, line-of-sight Euclidean distance between the aircraft's optical center (Camera) and the target touchdown zone (Aiming Point) on the runway. 
+
+The error is computed as follows:
 
 $$\text{Error}_{\%} = \frac{\vert{} d_{true} - \Vert{} \hat{\mathbf{t}} \Vert{}_2 \vert{}}{d_{true}} \times 100$$
 
