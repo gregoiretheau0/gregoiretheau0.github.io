@@ -65,7 +65,7 @@ We evaluate five distinct PnP implementations to identify the optimal configurat
 * **P3P (Perspective-3-Point)**: A closed-form solver (Gao / Kneip formulation) utilizing three point correspondences to derive up to four potential solutions [[Gao et al., 2003](#ref-p3p)], disambiguated using a fourth point.
 * **IPPE (Infinitesimal Plane-Based Pose Estimation)**: A non-iterative solver designed specifically for planar targets [[Collins & Bartoli, 2014](#ref-ippe)] (such as runway thresholds). It solves the pose directly from homography decomposition without iterative local minima risks.
 * **SQPNP (Sequential Quadratic Programming PnP)**: A solver that reformulates PnP non-linear least squares as a sequential quadratic program [[Terzakis & Lourakis, 2020](#ref-sqpnp)], handling coplanar and non-coplanar points consistently.
-* **BPnP (Backpropagatable PnP)**: A differentiable PnP formulation using the Implicit Function Theorem [[Chen et al., 2020](#ref-bpnp)]. While primarily designed for end-to-end trainable networks and backpropagation attacks, it acts as a baseline surrogate for non-differentiable solvers.
+* **BPnP (Backpropagatable PnP)**: A differentiable PnP formulation using the Implicit Function Theorem [[Chen et al., 2020](#ref-bpnp)]. While primarily designed for end-to-end trainable networks and backpropagation attacks, it acts as a baseline surrogate for standard OpenCV implementations that lack PyTorch automatic differentiation bindings.
 
 ---
 
@@ -134,7 +134,7 @@ Incorporating keypoint estimation noise from YOLOv8-Pose reveals how solvers how
 
 ### 3. Evaluating BPnP as a Differentiable Evaluation Surrogate
 
-Substituting non-differentiable solvers with backpropagatable alternatives like BPnP is required for gradient-based robustness evaluation (such as APGD adversarial validation [[Croce & Hein, 2020](#ref-apgd)]). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
+Substituting OpenCV solvers—which lack native automatic differentiation support—with backpropagatable implementations like BPnP is required for gradient-based robustness evaluation (such as APGD adversarial validation [[Croce & Hein, 2020](#ref-apgd)]). Our benchmark evaluates how closely BPnP mirrors standard OpenCV solvers:
 
 * **Nominal Equivalence**: On ground-truth keypoints, BPnP is performs on par with to standard Iterative PnP (**2.2% / 69.9 m** median error vs. **2.2% / 69.6 m** for ITER).
 * **Sensitivity to Outliers**: Under noisy predictions, while BPnP retains a median error close to ITER (**6.8% / 238.0 m** vs. **5.9% / 201.3 m**), it exhibits high sensitivity to severe keypoint perturbations. This causes its MAE to spike to **58.6% (592.2 m)** compared to **14.6% (368.2 m)** for ITER.
@@ -142,13 +142,13 @@ Substituting non-differentiable solvers with backpropagatable alternatives like 
 
 ### PnP Solvers Comparison Summary
 
-| Solver | Formulation Type | Coplanar Safe? | Differentiable? | Median Error (GT) | Median Error (YOLO Noise) | Primary Use Case |
+| Solver | Formulation Type | Coplanar Safe ? | Differentiable Implementation ? | Median Error (GT) | Median Error (YOLO Noise) | Primary Use Case |
 | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **ITER** | Non-linear (Levenberg-Marquardt) | ✅ | ❌ | 2.2% (69.6 m) | **5.9% (201.3 m)** | General baseline, strong noise tolerance |
-| **SQPNP** | Sequential Quadratic Prog. | ✅ | ❌ | 2.3% (73.5 m) | **6.7% (219.2 m)** | Best overall variance control under noise |
-| **IPPE** | Homography Decomposition | ✅ | ❌ | 3.0% (93.7 m) | **8.3% (241.5 m)** | Fast & direct solver tailored for planar targets |
-| **BPnP** | Implicit Function Theorem | ✅ | ✅ | 2.2% (69.9 m) | **6.8% (238.0 m)** | Gradient-based evaluating & end-to-end training |
-| **P3P** | Closed-form (3 points) | ❌ | ❌ | 8.8% (242.3 m) | **16.0% (518.7 m)** | Non-coplanar 3D targets only (Avoid for runways) |
+| **ITER** | Non-linear (Levenberg-Marquardt) | ✅ | ❌ (Standard OpenCV) | 2.2% (69.6 m) | **5.9% (201.3 m)** | General baseline, strong noise tolerance |
+| **SQPNP** | Sequential Quadratic Prog. | ✅ | ❌ (Standard OpenCV) | 2.3% (73.5 m) | **6.7% (219.2 m)** | Best overall variance control under noise |
+| **IPPE** | Homography Decomposition | ✅ | ❌ (Standard OpenCV) | 3.0% (93.7 m) | **8.3% (241.5 m)** | Fast & direct solver tailored for planar targets |
+| **BPnP** | Implicit Function Theorem | ✅ | ✅ (PyTorch Native) | 2.2% (69.9 m) | **6.8% (238.0 m)** | Gradient-based evaluation & end-to-end training |
+| **P3P** | Closed-form (3 points) | ❌ | ❌ (Standard OpenCV) | 8.8% (242.3 m) | **16.0% (518.7 m)** | Non-coplanar 3D targets only (Avoid for runways) |
 
 ---
 
@@ -156,7 +156,7 @@ Substituting non-differentiable solvers with backpropagatable alternatives like 
 >
 > * **Prefer SQPNP, ITER, or IPPE for Planar Targets**: For 4-point planar runway configurations, SQPNP, Iterative PnP, and IPPE provide optimal numerical stability and noise tolerance.
 > * **Avoid P3P for Planar Runway Keypoints**: P3P formulations suffer from geometric disambiguation issues when keypoints are strictly coplanar.
-> * **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, differentiable proxy for iterative algorithms during gradient-based security evaluation (such as APGD adversarial validation), provided keypoint outlier filtering is maintained.
+> * **Use BPnP as a Differentiable Evaluation Surrogate**: BPnP acts as a valid, backpropagatable proxy for standard OpenCV solvers during gradient-based security evaluation (such as APGD adversarial validation), provided keypoint outlier filtering is maintained.
 
 ---
 
